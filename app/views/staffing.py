@@ -15,8 +15,8 @@ from ui import (
     kpi,
     load_processed,
     pct,
+    page_header,
     queue_label,
-    setup_page,
     style,
 )
 
@@ -25,9 +25,15 @@ from wfm.erlang import erlang_a_metrics, erlang_c_metrics, required_agents, requ
 
 C_COLOR, A_COLOR = MODEL_COLORS["LightGBM"], MODEL_COLORS["Holt-Winters"]
 
-setup_page("Staffing")
-st.title("Staffing requirement")
-st.caption("Turning forecast calls and handle time into the number of agents needed on the phones in each 30-minute interval.")
+textbook_c = int(required_agents(100, 180)[0])
+textbook_a = int(required_agents_erlang_a(100, 180, 180)[0])
+page_header(
+    "staffing",
+    "Turning forecast calls and handle time into the number of agents needed on the phones in each 30-minute interval.",
+    f"100 calls in 30 minutes at 180s AHT needs <b>{textbook_c} agents</b> for 80/20 under Erlang C but only "
+    f"<b>{textbook_a}</b> under Erlang A, because real callers hang up. Erlang C is the safe default; it overstaffs "
+    "most on small queues with impatient callers.",
+)
 
 # Calculator ----------------------------------------------------------------------
 st.subheader("Erlang calculator")

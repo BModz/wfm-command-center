@@ -5,24 +5,28 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from ui import ACTUAL_COLOR, QUEUE_COLORS, SEQUENTIAL, STATUS, chart, kpi, load_metadata, load_processed, pct, queue_label, setup_page, style
+from ui import ACTUAL_COLOR, QUEUE_COLORS, SEQUENTIAL, STATUS, chart, kpi, load_metadata, load_processed, page_header, pct, queue_label, style
 
 from wfm.capacity import Shrinkage
 from wfm.config import INTERVALS_PER_DAY, QUEUES, open_mask
 from wfm.scheduling import DAY_NAMES, ShiftRules, optimise_shifts, schedule_requirement
 
-setup_page("Schedule")
-st.title("Shift schedule")
 rules = ShiftRules()
-st.caption(
+meta = load_metadata()
+eff_24x7 = sum(meta["schedule_stats"][q]["efficiency_pct"] for q in QUEUES if QUEUES[q].is_24x7) / sum(QUEUES[q].is_24x7 for q in QUEUES)
+sales_ft, sales_pt = meta["schedule_stats"]["SALES"], meta["schedule_stats_part_time"]["SALES"]
+page_header(
+    "schedule",
     f"Mixed-integer programme solved with HiGHS: choose how many agents start each {rules.shift_hours:.0f}-hour shift "
     f"({rules.paid_hours:.0f} paid hours plus a {rules.break_hours:.0f}-hour unpaid break) at any 30-minute start, with "
     "the break placed so nobody works more than 5 hours without a rest (Egyptian labour law). The week runs Sunday to "
     "Saturday and is cyclic, so Saturday night shifts wrap into Sunday morning. Optionally, 4- and 5-hour part-time "
-    f"shifts (no break needed, at most {rules.max_part_time_share:.0%} of paid hours) can be mixed in."
+    f"shifts (no break needed, at most {rules.max_part_time_share:.0%} of paid hours) can be mixed in.",
+    f"Full-time shifts schedule the 24/7 queues at <b>{pct(eff_24x7)}</b> efficiency. SALES, open 14 hours with two "
+    f"peaks, only reaches {pct(sales_ft['efficiency_pct'])}; adding part-time shifts lifts it to "
+    f"<b>{pct(sales_pt['efficiency_pct'])}</b> and saves <b>{sales_ft['fte_equivalent'] - sales_pt['fte_equivalent']:.1f} FTE</b>.",
 )
 
-meta = load_metadata()
 coverage = load_processed("schedule_coverage")
 shifts = load_processed("schedule_shifts")
 VARIANTS = {"full_time": "Full-time shifts only", "part_time": "Full-time + part-time shifts"}

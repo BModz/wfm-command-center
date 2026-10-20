@@ -5,18 +5,10 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from ui import ACTUAL_COLOR, HIGHLIGHT, MUTED, QUEUE_COLORS, chart, kpi, load_metadata, load_processed, pct, setup_page, style
+from ui import ACTUAL_COLOR, HIGHLIGHT, MUTED, QUEUE_COLORS, chart, kpi, load_metadata, load_processed, page_header, pct, style
 
 from wfm.config import QUEUES
 from wfm.multiskill import FLEX_SHARES, QueueLoad, compare_shares, pooling_gain_bound
-
-setup_page("Multi-Skill")
-st.title("Cross-skilling AR_BILLING and AR_TECH")
-st.caption(
-    "Erlang formulas cover one skill group. If some agents can take both Arabic billing and Arabic technical calls, the "
-    "two queues share spare capacity and need fewer people in total. There is no closed formula for partial "
-    "cross-skilling, so this page uses a discrete-event simulation of calls, agents and abandoning callers."
-)
 
 meta = load_metadata()
 detail = load_processed("cross_skill_day")
@@ -25,6 +17,15 @@ day = pd.Timestamp(meta["cross_skill"]["day"])
 base_hours = summary.loc[summary["flex_share"] == 0, "agent_hours"].iloc[0]
 best = summary.loc[summary["saving"].idxmax()]
 near_best = summary[summary["saving"] >= 0.9 * best["saving"]].iloc[0]  # smallest share with 90% of the gain
+page_header(
+    "multi_skill",
+    "Erlang formulas cover one skill group. If some agents can take both Arabic billing and Arabic technical calls, the "
+    "two queues share spare capacity and need fewer people in total. There is no closed formula for partial "
+    "cross-skilling, so this page uses a discrete-event simulation of calls, agents and abandoning callers.",
+    f"Cross-skilling <b>{near_best['flex_share']:.0%}</b> of AR_BILLING and AR_TECH agents saves "
+    f"<b>{near_best['saving']:.1%}</b> of agent-hours, about <b>{near_best['fte_saved']:.1f} FTE a week</b>. "
+    "Training everyone saves less, because cross-skilled agents are slower on their second skill.",
+)
 
 k = st.columns(4)
 kpi(k[0], "Agent-hours, dedicated teams", f"{base_hours:,.0f}", f"Both queues, {day:%a %d %b %Y}, 80/20 on each")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from ui import ACTUAL_COLOR, MUTED, QUEUE_COLORS, STATUS, chart, kpi, load_processed, pct, queue_label, setup_page, style
+from ui import ACTUAL_COLOR, MUTED, QUEUE_COLORS, STATUS, chart, kpi, load_processed, mark_period, page_header, pct, queue_label, style
 
 from wfm.capacity import (
     STARTING_HEADCOUNT,
@@ -17,15 +17,37 @@ from wfm.capacity import (
     weekly_requirement,
 )
 from wfm.config import QUEUES
+from wfm.egypt_calendar import RAMADAN_PERIODS
 
-setup_page("Capacity Plan")
-st.title("Capacity plan: 26 weeks")
-st.caption(
-    "Converts the interval requirement into weekly FTE, projects the current team forward with attrition, and "
-    "recommends new-hire classes to close the gaps. Every assumption below is editable."
-)
 req = load_processed("forecast_intervals")
 defaults = Shrinkage()
+
+
+@st.cache_data(show_spinner=False)
+def default_plan_headline() -> tuple[int, int, float, pd.Timestamp, pd.Timestamp]:
+    """Hires, classes, peak total FTE, peak week and first class start under the default assumptions."""
+    weekly = weekly_requirement(req, defaults)
+    hires = classes = 0
+    starts = []
+    for q in QUEUES:
+        r = weekly[weekly["queue"] == q].set_index("week_start")["required_fte"]
+        cls, _ = recommend_hiring(r, CapacityAssumptions(STARTING_HEADCOUNT[q]))
+        hires += sum(c.size for c in cls)
+        classes += len(cls)
+        starts += [r.index[c.start_week] for c in cls]
+    total = weekly.groupby("week_start")["required_fte"].sum()
+    return hires, classes, float(total.max()), total.idxmax(), min(starts)
+
+
+hires_all, classes_all, peak_fte, peak_week, first_class = default_plan_headline()
+page_header(
+    "capacity",
+    "Converts the interval requirement into weekly FTE, projects the current team forward with attrition, and "
+    "recommends new-hire classes to close the gaps. Every assumption below is editable.",
+    f"Demand peaks at <b>{peak_fte:.0f} FTE</b> in the week of {peak_week:%d %b %Y}, the start of Ramadan 2027. "
+    f"With 3.5% monthly attrition and a 6-week training ramp, the centre needs <b>{hires_all} hires in "
+    f"{classes_all} classes</b>, the first starting training on {first_class:%d %b %Y}.",
+)
 
 # Shrinkage editor -------------------------------------------------------------------
 st.subheader("Shrinkage")
@@ -103,6 +125,9 @@ fig.add_scatter(x=plan["week_start"], y=plan["required_fte"], name="Required FTE
 fig.add_scatter(x=plan["week_start"], y=baseline, name="Hiring baseline (5-week median)", line=dict(color=MUTED, width=1.5, dash="dot", shape="hv"))
 fig.add_scatter(x=plan["week_start"], y=plan["available_fte"], name="Available FTE", line=dict(color=QUEUE_COLORS[queue], width=2.5, shape="hv"))
 fig.add_scatter(x=plan["week_start"], y=plan["tenured_fte"], name="Available without hiring", line=dict(color=QUEUE_COLORS[queue], width=1.5, dash="dash", shape="hv"))
+for start, end in RAMADAN_PERIODS.values():
+    if pd.Timestamp(start) <= plan["week_start"].max() and pd.Timestamp(end) >= plan["week_start"].min():
+        mark_period(fig, pd.Timestamp(start), pd.Timestamp(end), "Ramadan 2027")
 chart(style(fig, 380, "FTE (productive, after shrinkage)"))
 
 fig_g = go.Figure()

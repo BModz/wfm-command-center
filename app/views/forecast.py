@@ -16,20 +16,15 @@ from ui import (
     load_metadata,
     load_processed,
     pct,
+    mark_period,
+    page_header,
     queue_label,
-    setup_page,
     style,
 )
 
 from wfm.config import QUEUES
+from wfm.egypt_calendar import EID_AL_FITR, RAMADAN_PERIODS
 from wfm.forecast import MODELS
-
-setup_page("Forecast")
-st.title("Demand forecast")
-st.caption(
-    "Daily volume per queue is forecast with three models and spread into 30-minute intervals using day-type "
-    "profiles. Accuracy is measured with WAPE (weighted absolute percentage error) and bias on held-out periods."
-)
 
 meta = load_metadata()
 metrics = load_processed("backtest_metrics")
@@ -40,6 +35,17 @@ fc_daily = load_processed("forecast_daily")
 daily = load_processed("daily_actuals")
 events = load_events()
 windows = list(metrics["window"].unique())
+totals = metrics[metrics["queue"] == "All queues"].set_index(["window", "model"])["wape"]
+normal_w, ramadan_w = windows
+champion = meta["champion_model"]
+page_header(
+    "forecast",
+    "Daily volume per queue is forecast with three models and spread into 30-minute intervals using day-type "
+    "profiles. Accuracy is measured with WAPE (weighted absolute percentage error) and bias on held-out periods.",
+    f"{champion} misses daily volume by <b>{pct(totals[(normal_w, champion)])}</b> in a normal period and "
+    f"<b>{pct(totals[(ramadan_w, champion)])}</b> through Ramadan, against {pct(totals[(ramadan_w, 'Seasonal naive')])} "
+    "for a seasonal naive forecast. Knowing the Egyptian calendar matters more than any time-series trick.",
+)
 
 # Model comparison --------------------------------------------------------------
 st.subheader("Model comparison")
@@ -85,6 +91,13 @@ fig.add_scatter(x=actual["date"], y=actual["actual"], name="Actual (outages clea
 for model in MODELS:
     f = bd[bd["model"] == model]
     fig.add_scatter(x=f["date"], y=f["forecast"], name=model, line=dict(color=MODEL_COLORS[model], width=2))
+for start, end in RAMADAN_PERIODS.values():
+    if pd.Timestamp(start) <= bd["date"].max() and pd.Timestamp(end) >= bd["date"].min():
+        mark_period(fig, pd.Timestamp(start), pd.Timestamp(end), "Ramadan")
+for first in EID_AL_FITR.values():
+    eid = pd.Timestamp(first)
+    if bd["date"].min() <= eid <= bd["date"].max():
+        mark_period(fig, eid - pd.Timedelta(hours=12), eid + pd.Timedelta(days=2, hours=12), "Eid")
 chart(style(fig, 380, "Calls offered per day"))
 st.caption(
     "Each model was trained only on data up to the day before the window. Hollow markers show raw volume; where "
@@ -123,7 +136,6 @@ st.caption(
 
 # Outlook ------------------------------------------------------------------------
 st.subheader("26-week outlook")
-champion = meta["champion_model"]
 hist = daily[daily["date"] > daily["date"].max() - pd.Timedelta(weeks=26)]
 fig_o = go.Figure()
 for q in QUEUES:
@@ -132,6 +144,9 @@ for q in QUEUES:
     fig_o.add_scatter(x=h["date"], y=h["offered_clean"], name=f"{q} actual", line=dict(color=QUEUE_COLORS[q], width=1.2), opacity=0.55, legendgroup=q)
     fig_o.add_scatter(x=f["date"], y=f["forecast"], name=f"{q} forecast", line=dict(color=QUEUE_COLORS[q], width=2), legendgroup=q)
 fig_o.add_vline(x=pd.Timestamp(meta["forecast"][0]), line=dict(color=MUTED, width=1))
+for start, end in RAMADAN_PERIODS.values():
+    if pd.Timestamp(start) >= hist["date"].min():
+        mark_period(fig_o, pd.Timestamp(start), pd.Timestamp(end), "Ramadan")
 chart(style(fig_o, 400, "Calls offered per day"))
 st.caption(
     f"{champion} forecast from {meta['forecast'][0]} to {meta['forecast'][1]}, after the last 26 weeks of cleaned "

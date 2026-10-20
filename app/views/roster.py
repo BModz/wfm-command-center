@@ -5,21 +5,24 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from ui import ACTUAL_COLOR, QUEUE_COLORS, chart, kpi, load_metadata, load_processed, pct, queue_label, setup_page, style
+from ui import ACTUAL_COLOR, QUEUE_COLORS, chart, kpi, load_metadata, load_processed, page_header, pct, queue_label, style
 
 from wfm.config import QUEUES
 from wfm.labour import EGYPT_LABOUR
 from wfm.scheduling import DAY_NAMES, days_off_label
 
-setup_page("Roster")
-st.title("Weekly roster")
-st.caption(
+meta = load_metadata()
+rostered = sum(meta["roster_stats"][q]["agents"] for q in QUEUES)
+shift_fte_all = sum(meta["schedule_stats"][q]["fte_equivalent"] for q in QUEUES)
+page_header(
+    "roster",
     "The shift schedule says how many agents should start at each time; a roster says which agent works when. Each "
     "agent gets one weekly pattern: the same start time on 5 days and 2 consecutive rest days. The roster is solved "
-    "directly as a tour-scheduling MILP (days-off pair x start time x break position) against the same requirement."
+    "directly as a tour-scheduling MILP (days-off pair x start time x break position) against the same requirement.",
+    f"<b>{rostered:.0f} named agents</b> cover all four queues with legal weeks. That is "
+    f"<b>{rostered / shift_fte_all - 1:+.1%}</b> more than the {shift_fte_all:.0f} FTE that free shift scheduling "
+    "suggests: the honest price of stable start times and two consecutive rest days, and what capacity plans should budget for.",
 )
-
-meta = load_metadata()
 agents = load_processed("roster_agents")
 coverage = load_processed("roster_coverage")
 tours = load_processed("roster_tours")

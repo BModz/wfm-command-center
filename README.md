@@ -2,7 +2,7 @@
 
 A complete workforce management system for **NileConnect**, a fictional Cairo telecom contact centre: demand forecasting, Erlang C / Erlang A staffing, a cross-skilling simulation, 26-week capacity and hiring plan, MILP shift scheduling with part-time shifts, weekly rostering and a real-time analyst (RTA) desk, delivered as an eight-page Streamlit app.
 
-**[Open the live demo](https://wfm-command-center-k7x5ugtdxsjssrxzgs27vt.streamlit.app/)** (Streamlit Community Cloud). The Real-Time page replays an outage day; drag the clock to 14:30 to see the incident detected.
+**[Open the live demo](https://wfm-command-center-k7x5ugtdxsjssrxzgs27vt.streamlit.app/)** (Streamlit Community Cloud). For the best two-minute tour, open the [RTA desk at 14:00](https://wfm-command-center-k7x5ugtdxsjssrxzgs27vt.streamlit.app/Real_Time_RTA_Desk?t=14:00) and press **Play** to watch an outage hit and the desk respond.
 
 > **NileConnect is fictional and all data is synthetic.** Real interval-level contact-centre data is not publicly available, so two years of 30-minute history were simulated with realistic Egyptian patterns (see [Data](#data)). Every number below comes from that simulated operation.
 
@@ -141,8 +141,11 @@ Projected service level for the next 4 hours goes from **54% with no action to 9
 
 ## The app
 
+The sidebar follows the WFM planning cycle: **Start** (Home, Overview), **Plan** (Forecast, Staffing, Multi-Skill, Capacity Plan), **Schedule** (Schedule, Roster) and **Operate** (RTA Desk). Every page opens with the question it answers and a key-takeaway box computed from the data, so the headline is readable in seconds. The layout works on phones.
+
 | Page | What it shows |
 |---|---|
+| **Home** | Headline results and a card for every page, grouped by planning stage |
 | **Overview** | Last 4 weeks of SL, ASA, abandon rate, occupancy and volume; two-year weekly trends; interval × weekday heatmap; Ramadan vs normal intraday profile |
 | **Forecast** | Model comparison table, backtest charts (daily and interval), Ramadan backtest, 26-week outlook |
 | **Staffing** | Interactive Erlang C / A calculator, interval requirement curve, Erlang C vs A comparison |
@@ -150,7 +153,7 @@ Projected service level for the next 4 hours goes from **54% with no action to 9
 | **Capacity Plan** | Editable shrinkage, supply assumptions, required vs available FTE, recommended hiring plan |
 | **Schedule** | Optimised weekly shifts with or without part-time, coverage and over/under charts, shift-start heatmap, live single-day re-optimisation |
 | **Roster** | Named weekly roster (5 days on, 2 consecutive off), rest-day spread, labour-rule checks, coverage |
-| **Real-Time (RTA Desk)** | Time slider, live KPI tiles, alerts, recommended actions with projected impact, agent adherence table |
+| **RTA Desk** | Live wallboard with Play/Pause replay of the outage day, alerts, recommended actions with projected impact, agent adherence table; deep links such as `?t=15:30` open it at a given time |
 
 | Overview | Forecast |
 |---|---|
@@ -200,7 +203,7 @@ Tests and screenshots:
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                    # 52 tests
+pytest                                    # 61 tests, including a render check of every page
 streamlit run app/Home.py &               # then, in another shell:
 python scripts/take_screenshots.py        # needs `playwright install chromium`, or set CHROMIUM_PATH
 ```
@@ -220,7 +223,7 @@ src/wfm/
   scheduling.py      shift MILP with part-time option, roster (tour) MILP (HiGHS)
   realtime.py        RTA replay, reforecast, alerts, actions, adherence
 scripts/             build_data.py, take_screenshots.py
-app/                 Streamlit app (Home.py + pages/)
+app/                 Streamlit app: Home.py (entry point and navigation), ui.py (shared design), views/ (pages)
 tests/               pytest suite
 docs/                methodology and screenshots
 ```

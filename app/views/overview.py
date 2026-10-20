@@ -17,22 +17,17 @@ from ui import (
     load_intervals,
     pct,
     queue_label,
+    mark_period,
+    page_header,
     queue_picker,
-    setup_page,
     style,
 )
 
 from wfm.config import QUEUES, SL_TARGET
 from wfm.egypt_calendar import RAMADAN_PERIODS
 
-setup_page("Overview")
-st.title("Operational overview")
-st.caption("Realised performance from the simulated history. All service metrics are volume-weighted across intervals.")
-
 intervals = load_intervals()
 calendar = load_calendar()
-queue = queue_picker("overview_queue")
-data = intervals if queue == "ALL" else intervals[intervals["queue"] == queue]
 
 
 def summarise(frame: pd.DataFrame) -> dict[str, float]:
@@ -49,6 +44,20 @@ def summarise(frame: pd.DataFrame) -> dict[str, float]:
     }
 
 
+centre = intervals[intervals["date"] > intervals["date"].max() - pd.Timedelta(weeks=4)]
+centre_kpis = summarise(centre)
+daily = intervals.groupby("date")["offered"].sum()
+dow = daily.groupby(daily.index.dayofweek).mean()
+page_header(
+    "overview",
+    "Realised performance from the simulated history. All service metrics are volume-weighted across intervals.",
+    f"Over the last four weeks the centre answered <b>{pct(centre_kpis['sl'])}</b> of calls within 20 seconds "
+    f"(target {SL_TARGET:.0%}) with <b>{pct(centre_kpis['abandon'])}</b> abandoned. Sunday carries "
+    f"<b>{dow[6] / dow[4]:.1f}x</b> Friday's volume, and Ramadan moves the busiest hours to late at night.",
+)
+queue = queue_picker("overview_queue")
+data = intervals if queue == "ALL" else intervals[intervals["queue"] == queue]
+
 end = data["date"].max()
 last4 = data[data["date"] > end - pd.Timedelta(weeks=4)]
 prev4 = data[(data["date"] <= end - pd.Timedelta(weeks=4)) & (data["date"] > end - pd.Timedelta(weeks=8))]
@@ -57,18 +66,35 @@ now, before = summarise(last4), summarise(prev4)
 st.subheader(f"Last 4 weeks: {queue_label(queue)}")
 st.caption(f"{(end - pd.Timedelta(days=27)).date()} to {end.date()}, compared with the previous 4 weeks.")
 c = st.columns(6)
-kpi(c[0], "Calls offered", f"{now['offered']:,.0f}", f"{now['offered'] / before['offered'] - 1:+.1%} vs prior 4 weeks")
+vol_change = now["offered"] / before["offered"] - 1
+kpi(c[0], "Calls offered", f"{now['offered']:,.0f}", "vs prior 4 weeks", delta=vol_change, delta_text=f"{vol_change:+.1%}", higher_is_better=None)
+sl_change = now["sl"] - before["sl"]
 kpi(
     c[1],
     "Service level (20s)",
     pct(now["sl"]),
-    f"Target {SL_TARGET:.0%} | prior {pct(before['sl'])}",
+    f"Target {SL_TARGET:.0%}",
     "ok" if now["sl"] >= SL_TARGET else ("warn" if now["sl"] >= 0.7 else "bad"),
+    delta=sl_change,
+    delta_text=f"{sl_change * 100:+.1f} pts",
 )
-kpi(c[2], "ASA", f"{now['asa']:.0f}s", f"Prior {before['asa']:.0f}s")
-kpi(c[3], "Abandon rate", pct(now["abandon"]), f"Prior {pct(before['abandon'])}", "ok" if now["abandon"] < 0.05 else "warn")
-kpi(c[4], "Occupancy", pct(now["occupancy"]), "Handle time / staffed time")
-kpi(c[5], "AHT", f"{now['aht']:.0f}s", f"Prior {before['aht']:.0f}s")
+asa_change = now["asa"] - before["asa"]
+kpi(c[2], "ASA", f"{now['asa']:.0f}s", "Average wait of answered calls", delta=asa_change, delta_text=f"{asa_change:+.0f}s", higher_is_better=False)
+ab_change = now["abandon"] - before["abandon"]
+kpi(
+    c[3],
+    "Abandon rate",
+    pct(now["abandon"]),
+    "Abandoned / offered",
+    "ok" if now["abandon"] < 0.05 else "warn",
+    delta=ab_change,
+    delta_text=f"{ab_change * 100:+.1f} pts",
+    higher_is_better=False,
+)
+occ_change = now["occupancy"] - before["occupancy"]
+kpi(c[4], "Occupancy", pct(now["occupancy"]), "Handle time / staffed time", delta=occ_change, delta_text=f"{occ_change * 100:+.1f} pts", higher_is_better=None)
+aht_change = now["aht"] - before["aht"]
+kpi(c[5], "AHT", f"{now['aht']:.0f}s", "Talk + hold + wrap", delta=aht_change, delta_text=f"{aht_change:+.0f}s", higher_is_better=None)
 
 # Weekly trends ---------------------------------------------------------------
 st.subheader("Two-year weekly trend")
@@ -79,19 +105,24 @@ weekly = weekly.groupby(["week", "queue"], observed=True).agg(
 weekly = weekly[weekly["week"] > weekly["week"].min()]  # drop the partial first week
 weekly = weekly[weekly["week"] < weekly["week"].max()]  # and the partial last week
 shown = list(QUEUES) if queue == "ALL" else [queue]
+ramadans = [(pd.Timestamp(a), pd.Timestamp(b)) for a, b in RAMADAN_PERIODS.values() if pd.Timestamp(a) <= weekly["week"].max()]
 
 left, right = st.columns(2)
 fig = go.Figure()
 for q in shown:
     w = weekly[weekly["queue"] == q]
     fig.add_scatter(x=w["week"], y=w["offered"], name=q, line=dict(color=QUEUE_COLORS[q], width=2))
+for r_start, r_end in ramadans:
+    mark_period(fig, r_start, r_end, "Ramadan")
 with left:
     chart(style(fig, 320, "Calls offered per week"))
 fig_sl = go.Figure()
 for q in shown:
     w = weekly[weekly["queue"] == q]
     fig_sl.add_scatter(x=w["week"], y=w["in_sl"] / w["offered"], name=q, line=dict(color=QUEUE_COLORS[q], width=2))
-fig_sl.add_hline(y=SL_TARGET, line=dict(color=REFERENCE, width=1), annotation_text="80% target", annotation_position="top left")
+fig_sl.add_hline(y=SL_TARGET, line=dict(color=REFERENCE, width=1), annotation_text="80% target", annotation_position="bottom left")
+for r_start, r_end in ramadans:
+    mark_period(fig_sl, r_start, r_end, "Ramadan")
 fig_sl.update_yaxes(tickformat=".0%")
 with right:
     chart(style(fig_sl, 320, "Weekly service level (20s)"))
@@ -146,7 +177,7 @@ def shares(frame: pd.DataFrame) -> np.ndarray:
 fig_r = go.Figure()
 fig_r.add_scatter(x=labels, y=shares(normal), name="Normal (6 weeks before)", line=dict(color=MUTED, width=2))
 fig_r.add_scatter(x=labels, y=shares(ramadan), name=f"Ramadan {year}", line=dict(color=QUEUE_COLORS[profile_q], width=2.5))
-fig_r.add_vrect(x0="17:30", x1="19:30", fillcolor="#f3f2ef", line_width=0, layer="below", annotation_text="Iftar", annotation_position="top left")
+mark_period(fig_r, "17:30", "19:30", "Iftar")
 fig_r.update_yaxes(tickformat=".1%")
 chart(style(fig_r, 340, "Share of daily calls"))
 st.caption(

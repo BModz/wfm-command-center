@@ -4,7 +4,14 @@ primaryColor = "#2a78d6"
 backgroundColor = "#fcfcfb"
 secondaryBackgroundColor = "#f3f2ef"
 textColor = "#0b0b0b"
-font = "sans serif"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
+baseFontSize = 15
+baseRadius = "8px"
+borderColor = "#e8e7e3"
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#f6f5f2"
 
 [server]
 headless = true
