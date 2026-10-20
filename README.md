@@ -204,4 +204,4 @@ Built with Python 3.11+, pandas, NumPy, SciPy (HiGHS), statsmodels, LightGBM, St
 
 ## Licence
 
-Copyright (c) 2026 BModz. All rights reserved. The code is published for portfolio viewing and evaluation only; see [LICENSE](LICENSE).
+Copyright (c) 2026 Ahmed Mamdouh (GitHub: BModz). All rights reserved. The code is published for portfolio viewing and evaluation only; see [LICENSE](LICENSE).
