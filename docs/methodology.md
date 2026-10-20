@@ -266,7 +266,66 @@ Staffed agents per interval = mean on-phone count across its six slots. Realised
 
 The projected SL before and after the actions is computed with Erlang A.
 
-## 9. Labour-law assumptions (`labour.py`)
+## 9. RTA flagging and daily reports (`rta_reports.py`)
+
+**Agent flagging.** At the end of each interval, every agent whose scheduled state differs from their actual state (in 5-minute slots) is classified:
+
+| Scheduled | Actual | Issue | Costs capacity? |
+|---|---|---|---|
+| Phone | Logged out, never logged in today | No-show | yes |
+| Phone | Logged out, logged in earlier | Logged out during shift | yes |
+| Phone | Break | Break overrun or taken early | yes |
+| Phone | Unscheduled aux | Unscheduled aux | yes |
+| Break / coaching | Phone | Working through break, or on phones instead of coaching | no (monitor only) |
+
+Escalation uses the length of the current mismatch, with thresholds as site-policy defaults that can be edited on the desk:
+- **5 minutes:** nudge the agent by chat.
+- **15 minutes:** the team leader, by extension call.
+- **30 minutes, or any no-show:** the operations manager (radio or floor walk), and log for the attendance and RCA reports.
+- **Coaching follow-up:** agents back in adherence with at least 2 scheduled hours and adherence below 85%.
+
+Each flag carries a message built from the agent's states, the time the issue started and the queue's current service level.
+
+**Staffing Outlook** (start of shift, today and tomorrow):
+- **Inputs:** the day-before interval forecast and the published schedule's on-phone coverage, net of planned coaching and meetings.
+- **Projected staffed** = scheduled × (1 − 5% expected in-day loss).
+- **Over/under** = projected − Erlang C requirement.
+- **Projected SL** comes from Erlang A.
+- **Short interval:** at least one full agent missing.
+
+**Midday reforecast.** Uses the RTA snapshot at the chosen time: actual vs forecast so far, the run-rate reforecast for the rest of the day (section 8) and the revised over/under against projected staffing.
+
+**RCA.**
+- **Incident window:** the longest run of intervals at or above 1.5x forecast.
+- **Timeline:** start, detection (the alert rule), peak, end and service-level recovery.
+- **Impact:** excess calls, abandons above the day's normal abandon rate, and SL inside vs outside the window.
+- **Contributing factors:** staffing realisation, unscheduled aux, coaching and breaks inside the window.
+- **Actions:** the desk's recommendations shortly after detection.
+- **Preventive actions:** generated from the incident window and queues.
+
+## 10. SQL and Excel reporting (`sql_reports.py`, `excel_report.py`)
+
+**SQL.** The interval history, calendar, events, roster and 5-minute agent states are loaded into an in-memory SQLite database (dates as ISO text). Each report is a `.sql` file with named parameters:
+
+| Report | Techniques |
+|---|---|
+| Interval report | CASE status, NULLIF guards |
+| Daily KPIs | CTEs; 7-day rolling SL with a window frame; `LAG` for week-on-week change, filtered after the window |
+| Plan vs actual | join to the calendar, weekly bias and interval WAPE |
+| Shrinkage | `AVG` and `RANK` over partitions |
+| Worst intervals | `ROW_NUMBER` per queue, driver classification |
+| Outage impact | range join of intervals to event windows |
+| Adherence | conditional sums over agent states, team average by window function |
+
+Tests compare the SQL output with pandas.
+
+**Excel.** Built with xlsxwriter; every calculated cell is a formula and also stores Python's value for viewers that do not recalculate.
+- **Erlang C:** P(wait) = P(N) / (P(N) + (1 − A/N) · CDF(N−1)), with Poisson pmf/cdf from `POISSON.DIST`, which is algebraically identical to the Erlang C formula.
+- **Compounded shrinkage:** `1 − EXP(SUMPRODUCT(LN(1 − range)))`, which avoids array formulas.
+- **Future functions:** `POISSON.DIST` is stored with the `_xlfn.` prefix. Without it Excel and LibreOffice return `#NAME?`.
+- **Verification:** LibreOffice recalculates the workbook headlessly and every formula result is compared with the cached Python value.
+
+## 11. Labour-law assumptions (`labour.py`)
 
 These are from public summaries of Egypt's Labour Law No. 14 of 2025 (in force from September 2025). Secondary sources disagree on some figures and the executive regulations were still being finalised, so these are planning assumptions, not legal advice.
 
@@ -276,7 +335,7 @@ These are from public summaries of Egypt's Labour Law No. 14 of 2025 (in force f
 - **Overtime:** at most 2 hours a day, paid at +35% by day and +70% at night.
 - **Annual leave:** 21 days.
 
-## 10. Limitations
+## 12. Limitations
 
 - **The data is synthetic.** Absolute accuracy figures show the method, not what any real centre would achieve. Real data has messier drivers: marketing, IT releases, weather.
 - **Ramadan, Eid and other lunar-calendar dates are approximate.**

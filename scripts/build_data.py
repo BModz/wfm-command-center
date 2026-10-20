@@ -43,6 +43,7 @@ from wfm.forecast import (  # noqa: E402
     run_backtest,
     select_champion,
 )
+from wfm.excel_report import WORKBOOK_NAME, agent_minutes, build_workbook  # noqa: E402
 from wfm.multiskill import day_comparison, summarise_day  # noqa: E402
 from wfm.realtime import build_rta_day, save_rta_day  # noqa: E402
 from wfm.scheduling import ShiftRules, optimise_roster, optimise_shifts, schedule_requirement  # noqa: E402
@@ -156,11 +157,23 @@ def main() -> None:
     )
     week_req = interval_requirement(week_fc[week_fc["queue"] == RTA_QUEUE]).sort_values("interval_start")
     rta_schedule = optimise_shifts(schedule_requirement(week_req["required_agents"].to_numpy(), shrinkage.in_day), start=week)
+    tomorrow = RTA_REPLAY_DATE + pd.Timedelta(days=1)
     _, day_fc = forecast_forward(
-        clean, daily, calendar, events, RTA_REPLAY_DATE - pd.Timedelta(days=1), RTA_REPLAY_DATE, RTA_REPLAY_DATE, champion
+        clean, daily, calendar, events, RTA_REPLAY_DATE - pd.Timedelta(days=1), RTA_REPLAY_DATE, tomorrow, champion
     )
     rta_day = build_rta_day(intervals, day_fc, rta_schedule.shifts, week, RTA_REPLAY_DATE, RTA_QUEUE, shrinkage.coaching + shrinkage.meetings)
     save_rta_day(rta_day, PROCESSED_DIR)
+
+    # Start-of-shift Staffing Outlook inputs: today's and tomorrow's forecast against the published schedule,
+    # with planned in-day offline time (coaching, meetings) taken off the scheduled phone time.
+    plan = day_fc[day_fc["queue"] == RTA_QUEUE][["date", "interval", "interval_start", "forecast_offered", "forecast_aht_s"]]
+    sched_cov = rta_schedule.coverage[["interval_start", "scheduled_on_phone"]]
+    plan = plan.merge(sched_cov, on="interval_start")
+    plan["scheduled_on_phone"] *= 1 - (shrinkage.coaching + shrinkage.meetings)
+    plan.drop(columns="interval_start").to_parquet(PROCESSED_DIR / "rta_plan.parquet", index=False)
+
+    build_workbook(PROCESSED_DIR / WORKBOOK_NAME, rta_day, agent_minutes(rta_day), intervals, calendar, requirement)
+    _log("Excel workbook written", t0)
     _log(f"RTA replay day built with {len(rta_day.agents)} agents", t0)
 
     meta = {

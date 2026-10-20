@@ -27,6 +27,7 @@ PAGES = {
     "schedule": "Schedule",
     "roster": "Roster",
     "rta_desk": "Real_Time_RTA_Desk?t=15:30",
+    "reports": "Reports",
 }
 OUT = Path(__file__).resolve().parents[1] / "docs" / "screenshots"
 

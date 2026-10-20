@@ -23,7 +23,7 @@ st.markdown(
     <span class="chip note">Fictional company · synthetic data</span>
     <span class="chip">4 queues · ~13,000 calls a day</span>
     <span class="chip">Egyptian calendar, Ramadan and labour law</span>
-    <span class="chip">Python · LightGBM · HiGHS MILP · Streamlit</span>
+    <span class="chip">Python · SQL · Excel · LightGBM · HiGHS MILP · Streamlit</span>
   </div>
 </div>
 """,
@@ -58,7 +58,7 @@ kpi(c[1], "Outage response", f"{sl_before:.0%} → {sl_after:.0%}", f"Projected 
 kpi(c[2], "Part-time shifts on SALES", f"−{sales_ft - sales_pt:.1f} FTE", f"{(sales_ft - sales_pt) / sales_ft:.0%} fewer paid hours for the same 80/20 coverage")
 kpi(c[3], "Cross-skilling 30% of agents", f"{cross.loc[0.3, 'fte_saved']:.1f} FTE", f"saved per week on the Arabic queues ({cross.loc[0.3, 'saving']:.1%} of agent-hours)")
 
-for section in ("Start", "Plan", "Schedule", "Operate"):
+for section in ("Start", "Plan", "Schedule", "Operate", "Report"):
     pages = [p for p in PAGES if p.section == section and p.key != "home"]
     if not pages:
         continue
@@ -66,7 +66,7 @@ for section in ("Start", "Plan", "Schedule", "Operate"):
     cols = st.columns(4 if section == "Plan" else 3)
     for col, page in zip(cols, pages, strict=False):
         with col.container(border=True, key=f"card_{page.key}"):
-            stage = f"Step {page.step} of {PLANNING_STEPS}" if page.step else "Start here"
+            stage = f"Step {page.step} of {PLANNING_STEPS}" if page.step else page.tag
             st.markdown(f'<div class="card-stage">{stage}</div>', unsafe_allow_html=True)
             st.page_link(page.file, label=page.title, icon=page.icon)
             st.markdown(f'<div class="card-blurb">{page.blurb}</div>', unsafe_allow_html=True)

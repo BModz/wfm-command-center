@@ -69,6 +69,7 @@ class PageInfo:
     url_path: str | None
     question: str
     blurb: str
+    tag: str = ""  # header label for pages outside the numbered planning steps
 
 
 PLANNING_STEPS = 7
@@ -77,7 +78,8 @@ PAGES: list[PageInfo] = [
              "An end-to-end WFM system for a fictional Cairo contact centre.", ""),
     PageInfo("overview", "Overview", "views/overview.py", ":material/monitoring:", "Start", None, "Overview",
              "How has the centre performed, and what does demand look like?",
-             "Service level, ASA, abandons and occupancy for the last four weeks, and the shape of demand."),
+             "Service level, ASA, abandons and occupancy for the last four weeks, and the shape of demand.",
+             "Performance review"),
     PageInfo("forecast", "Forecast", "views/forecast.py", ":material/query_stats:", "Plan", 1, "Forecast",
              "How many calls will arrive, and how accurate are we?",
              "Three models backtested on a normal period and on Ramadan, plus a 26-week outlook."),
@@ -98,7 +100,11 @@ PAGES: list[PageInfo] = [
              "Named weekly patterns: five days on, two consecutive rest days, fixed start times."),
     PageInfo("rta", "RTA Desk", "views/rta_desk.py", ":material/support_agent:", "Operate", 7, "Real_Time_RTA_Desk",
              "What is happening right now, and what should we do?",
-             "Replay an outage day: live alerts, recommended actions and agent adherence."),
+             "Replay an outage day: live alerts, agent flags, recommended actions and shift reports."),
+    PageInfo("reports", "Reports", "views/reports.py", ":material/table_view:", "Report", None, "Reports",
+             "Which standard WFM reports does the team run, and how?",
+             "Interval, KPI, shrinkage, adherence and RCA reports in SQL, plus an Excel workbook with live formulas.",
+             "Standard reporting"),
 ]
 PAGE_BY_KEY = {p.key: p for p in PAGES}
 
@@ -211,7 +217,7 @@ def page_header(key: str, intro: str = "", takeaway: str = "") -> None:
     ``takeaway`` may contain simple inline HTML such as <b>; everything else is escaped.
     """
     page = PAGE_BY_KEY[key]
-    stage = f"{page.section} · Step {page.step} of {PLANNING_STEPS}" if page.step else f"{page.section} · Performance review"
+    stage = f"{page.section} · Step {page.step} of {PLANNING_STEPS}" if page.step else f"{page.section} · {page.tag}"
     intro_html = f'<p class="intro">{html.escape(intro)}</p>' if intro else ""
     st.markdown(
         f'<div class="page-head"><div class="eyebrow">{stage}</div><h1>{html.escape(page.title)}</h1>'

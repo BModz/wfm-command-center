@@ -91,7 +91,7 @@ A discrete-event simulation reproduces Erlang A to within about 1 point of servi
 
 | Queue | FTE, full-time shifts | Efficiency | FTE, with part-time | Efficiency | Rostered agents |
 |---|---|---|---|---|---|
-| AR_BILLING | 93.6 | 97.4% | 92.5 | 98.6% | 101 |
+| AR_BILLING | 93.6 | 97.4% | 92.5 | 98.5% | 101 |
 | AR_TECH | 121.6 | 96.8% | 119.0 | 98.9% | 126 |
 | EN_SUPPORT | 34.6 | 97.4% | 34.7 | 97.2% | 36 |
 | SALES | 57.8 | 83.0% | **48.8** | **99.3%** | 59 |
@@ -110,6 +110,29 @@ At 14:00 AR_TECH volume jumps to 2.5x forecast. The desk flags a **possible inci
 4. **Offer overtime to 19 agents** from 15:30 to 18:00, at most 1.5 hours each, at a +35% premium (about 28 overtime hours).
 
 Projected service level for the next 4 hours goes from **54% with no action to 95% with the actions**. After the outage clears, surge intervals are excluded from the run rate, so the desk stops recommending overtime. Adherence for the day is about 96% and conformance about 97%. The adherence table shows why these differ: an agent who takes a full break 30 minutes late keeps 100% conformance but loses adherence.
+
+**Agent flagging.** Every agent out of adherence is placed on an escalation ladder with a ready-to-send message:
+
+| Time out of adherence | Next step | Channel |
+|---|---|---|
+| 5 minutes | Nudge the agent | Chat |
+| 15 minutes | Escalate to the team leader | Extension call |
+| 30 minutes, or a no-show | Escalate to the operations manager, and log for the attendance and RCA reports | Radio / floor walk |
+
+- Agents back in adherence but below 85% for the day get a **coaching follow-up**.
+- Agents working through a scheduled break add capacity, so they are only monitored.
+- Thresholds are editable, sent flags go into a log that exports to CSV, and the messages can be copied for pasting into chat.
+
+**The RTA's daily documents, generated from the data:**
+- **Start-of-shift Staffing Outlook for today and tomorrow:** projected over/under by interval and the watch-out intervals.
+- **Intraday (midday) reforecast:** plan vs actual so far, the rest-of-day reforecast and the revised over/under.
+- **End-of-incident RCA:** timeline, impact, root cause, contributing factors, actions and prevention. The outage day's RCA finds 1,995 excess calls and 1,373 abandons above the normal rate. It also attributes the contributing factors: 10 agents had coaching booked inside the window, and staffing ran at 94% of the schedule.
+
+### Reporting: SQL and Excel
+
+- **Seven standard reports written in SQL:** interval report, daily KPIs with a 7-day rolling service level, weekly plan vs actual, shrinkage ranking, worst intervals, outage impact and agent adherence. They use common table expressions, window functions (`LAG`, `RANK`, `ROW_NUMBER`, rolling sums), joins and CASE logic, and run on a SQLite copy of the data. Tests check the SQL results against pandas.
+- **An Excel workbook with live formulas** covering Erlang C, the interval report, shrinkage, the capacity plan and adherence. It uses `POISSON.DIST`, `INDEX`/`MATCH`, `SUMPRODUCT`, `AVERAGEIFS`, the `EXP(SUMPRODUCT(LN()))` form of compounded shrinkage, cross-sheet links and conditional formatting.
+- **The workbook is checked formula by formula.** It was recalculated from scratch in LibreOffice and every formula cell matched the Python engine. This check caught a real bug: `POISSON.DIST` must be stored as an Excel 2010 "future function", otherwise Excel shows `#NAME?`. A test repeats the check whenever LibreOffice is available.
 
 ## Key insights
 
@@ -137,6 +160,9 @@ Projected service level for the next 4 hours goes from **54% with no action to 9
 - Rostering (tour scheduling): rest-day patterns, fixed start times, weekend preferences, cost of rostering rules
 - Intraday management: reforecasting, incident detection, IVR deflection and callback, cancelling offline activities, break moves, overtime, VTO
 - Adherence vs conformance, exception tracking (late login, extended break, unscheduled aux, no-show)
+- Agent flagging with an escalation ladder (agent → team leader → operations manager → coaching) and a flag log
+- RTA reporting routine: start-of-shift Staffing Outlook (today and tomorrow), midday reforecast, incident RCA
+- Standard WFM reports in SQL (interval, KPI, plan vs actual, shrinkage, adherence) and Excel models with live formulas
 - Egyptian labour law as planning constraints
 
 ## The app
@@ -153,7 +179,8 @@ The sidebar follows the WFM planning cycle: **Start** (Home, Overview), **Plan**
 | **Capacity Plan** | Editable shrinkage, supply assumptions, required vs available FTE, recommended hiring plan |
 | **Schedule** | Optimised weekly shifts with or without part-time, coverage and over/under charts, shift-start heatmap, live single-day re-optimisation |
 | **Roster** | Named weekly roster (5 days on, 2 consecutive off), rest-day spread, labour-rule checks, coverage |
-| **RTA Desk** | Live wallboard with Play/Pause replay of the outage day, alerts, recommended actions with projected impact, agent adherence table; deep links such as `?t=15:30` open it at a given time |
+| **RTA Desk** | Live wallboard with Play/Pause replay of the outage day. Three tabs: **Live view** (alerts, recommended actions with projected impact, charts), **Agent flags** (escalation ladder, messages, flag log, adherence table) and **Shift reports** (Staffing Outlook, intraday reforecast, RCA, all downloadable). Deep links such as `?t=15:30` open it at a given time |
+| **Reports** | Seven SQL reports with the query shown beside the result and CSV download; the Excel workbook download |
 
 | Overview | Forecast |
 |---|---|
@@ -162,8 +189,10 @@ The sidebar follows the WFM planning cycle: **Start** (Home, Overview), **Plan**
 | ![Staffing](docs/screenshots/staffing.png) | ![Capacity plan](docs/screenshots/capacity_plan.png) |
 | **Multi-Skill** | **Schedule** |
 | ![Multi-skill](docs/screenshots/multi_skill.png) | ![Schedule](docs/screenshots/schedule.png) |
-| **Roster** | **Home** |
-| ![Roster](docs/screenshots/roster.png) | ![Home](docs/screenshots/home.png) |
+| **Roster** | **Reports** |
+| ![Roster](docs/screenshots/roster.png) | ![Reports](docs/screenshots/reports.png) |
+| **Home** | |
+| ![Home](docs/screenshots/home.png) | |
 
 ## Data
 
@@ -203,7 +232,7 @@ Tests and screenshots:
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                    # 61 tests, including a render check of every page
+pytest                                    # 76 tests, including a render check of every page
 streamlit run app/Home.py &               # then, in another shell:
 python scripts/take_screenshots.py        # needs `playwright install chromium`, or set CHROMIUM_PATH
 ```
@@ -222,6 +251,9 @@ src/wfm/
   capacity.py        shrinkage, FTE, attrition, hiring recommender
   scheduling.py      shift MILP with part-time option, roster (tour) MILP (HiGHS)
   realtime.py        RTA replay, reforecast, alerts, actions, adherence
+  rta_reports.py     agent flagging, Staffing Outlook, midday reforecast, incident RCA
+  sql_reports.py     SQLite reporting layer; queries live in sql/*.sql
+  excel_report.py    Excel workbook with live formulas
 scripts/             build_data.py, take_screenshots.py
 app/                 Streamlit app: Home.py (entry point and navigation), ui.py (shared design), views/ (pages)
 tests/               pytest suite

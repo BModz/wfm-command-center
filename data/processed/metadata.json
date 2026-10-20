@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-10-20T13:22:44",
+  "built_at": "2026-10-20T15:02:52",
   "seed": 42,
   "champion_model": "LightGBM",
   "history": [
@@ -79,19 +79,19 @@
   },
   "schedule_stats_part_time": {
     "AR_BILLING": {
-      "shifts": 562.0,
-      "part_time_shifts": 236.0,
-      "paid_hours": 3699.0,
-      "part_time_hours_share": 0.2949445796161125,
-      "fte_equivalent": 92.475,
+      "shifts": 563.0,
+      "part_time_shifts": 237.0,
+      "paid_hours": 3701.0,
+      "part_time_hours_share": 0.2953255876790057,
+      "fte_equivalent": 92.525,
       "requirement_hours": 3646.0,
-      "scheduled_hours": 3699.0,
-      "over_hours": 53.0,
+      "scheduled_hours": 3701.0,
+      "over_hours": 55.0,
       "under_hours": 0.0,
       "coverage_pct": 1.0,
-      "efficiency_pct": 0.9856718031900513,
+      "efficiency_pct": 0.9851391515806539,
       "intervals_under": 0.0,
-      "mip_gap": 0.01162763046322193,
+      "mip_gap": 0.012170266625787258,
       "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
     },
     "AR_TECH": {
@@ -147,9 +147,9 @@
     "AR_BILLING": {
       "agents": 101.0,
       "paid_hours": 4040.0,
-      "weekend_off_share": 0.2079207920792079,
-      "distinct_start_times": 34.0,
-      "mip_gap": 0.019513988616180963,
+      "weekend_off_share": 0.21782178217821782,
+      "distinct_start_times": 31.0,
+      "mip_gap": 0.018917651991945915,
       "requirement_hours": 3646.0,
       "scheduled_hours": 4040.0,
       "over_hours": 394.5,
