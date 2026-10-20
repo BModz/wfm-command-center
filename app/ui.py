@@ -14,6 +14,27 @@ SRC = Path(__file__).resolve().parents[1] / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
+
+def _refresh_wfm_package() -> None:
+    """Drop cached ``wfm`` modules when their source changed on disk.
+
+    Streamlit only reloads modules inside the app folder. After a redeploy pulls
+    new code, the server would otherwise keep serving the old ``wfm`` package to
+    the new pages and fail with import or attribute errors.
+    """
+    files = sorted((SRC / "wfm").glob("*.py"))
+    fingerprint = tuple((f.name, f.stat().st_mtime_ns, f.stat().st_size) for f in files)
+    cached = sys.modules.get("wfm")
+    if cached is not None and getattr(cached, "__source_fingerprint__", fingerprint) != fingerprint:
+        for name in [m for m in sys.modules if m == "wfm" or m.startswith("wfm.")]:
+            del sys.modules[name]
+    import wfm
+
+    wfm.__source_fingerprint__ = fingerprint
+
+
+_refresh_wfm_package()
+
 from wfm.config import DATA_DIR, PROCESSED_DIR, QUEUES  # noqa: E402
 
 # Reference categorical palette, fixed order: colour follows the queue, never its rank.
@@ -57,6 +78,8 @@ h3 {font-size: 1.05rem !important; font-weight: 600 !important;}
 def setup_page(title: str) -> None:
     """Page config, shared CSS and the sidebar note shown on every page."""
     st.set_page_config(page_title=f"{title} | NileConnect WFM", layout="wide", initial_sidebar_state="expanded")
+    # Forget this module so the next page run re-imports it and repeats the wfm freshness check.
+    sys.modules.pop(__name__, None)
     st.markdown(CSS, unsafe_allow_html=True)
     with st.sidebar:
         st.markdown("**NileConnect WFM Command Centre**")
