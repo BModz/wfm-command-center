@@ -1,5 +1,5 @@
 {
-  "built_at": "2026-10-20T12:40:37",
+  "built_at": "2026-10-20T13:22:44",
   "seed": 42,
   "champion_model": "LightGBM",
   "history": [
@@ -14,7 +14,9 @@
   "schedule_stats": {
     "AR_BILLING": {
       "shifts": 468.0,
+      "part_time_shifts": 0.0,
       "paid_hours": 3744.0,
+      "part_time_hours_share": 0.0,
       "fte_equivalent": 93.6,
       "requirement_hours": 3646.0,
       "scheduled_hours": 3744.0,
@@ -28,7 +30,9 @@
     },
     "AR_TECH": {
       "shifts": 608.0,
+      "part_time_shifts": 0.0,
       "paid_hours": 4864.0,
+      "part_time_hours_share": 0.0,
       "fte_equivalent": 121.6,
       "requirement_hours": 4708.0,
       "scheduled_hours": 4864.0,
@@ -42,7 +46,9 @@
     },
     "EN_SUPPORT": {
       "shifts": 173.0,
+      "part_time_shifts": 0.0,
       "paid_hours": 1384.0,
+      "part_time_hours_share": 0.0,
       "fte_equivalent": 34.6,
       "requirement_hours": 1348.5,
       "scheduled_hours": 1384.0,
@@ -51,12 +57,14 @@
       "coverage_pct": 1.0,
       "efficiency_pct": 0.974349710982659,
       "intervals_under": 0.0,
-      "mip_gap": 0.024552641800133092,
+      "mip_gap": 0.024553205254098237,
       "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
     },
     "SALES": {
       "shifts": 289.0,
+      "part_time_shifts": 0.0,
       "paid_hours": 2312.0,
+      "part_time_hours_share": 0.0,
       "fte_equivalent": 57.8,
       "requirement_hours": 1939.0,
       "scheduled_hours": 2312.0,
@@ -69,12 +77,187 @@
       "status": "Optimization terminated successfully. (HiGHS Status 7: Optimal)"
     }
   },
+  "schedule_stats_part_time": {
+    "AR_BILLING": {
+      "shifts": 562.0,
+      "part_time_shifts": 236.0,
+      "paid_hours": 3699.0,
+      "part_time_hours_share": 0.2949445796161125,
+      "fte_equivalent": 92.475,
+      "requirement_hours": 3646.0,
+      "scheduled_hours": 3699.0,
+      "over_hours": 53.0,
+      "under_hours": 0.0,
+      "coverage_pct": 1.0,
+      "efficiency_pct": 0.9856718031900513,
+      "intervals_under": 0.0,
+      "mip_gap": 0.01162763046322193,
+      "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
+    },
+    "AR_TECH": {
+      "shifts": 718.0,
+      "part_time_shifts": 300.0,
+      "paid_hours": 4761.0,
+      "part_time_hours_share": 0.2976265490443184,
+      "fte_equivalent": 119.025,
+      "requirement_hours": 4708.0,
+      "scheduled_hours": 4761.0,
+      "over_hours": 53.0,
+      "under_hours": 0.0,
+      "coverage_pct": 1.0,
+      "efficiency_pct": 0.9888678848981306,
+      "intervals_under": 0.0,
+      "mip_gap": 0.010293330699702702,
+      "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
+    },
+    "EN_SUPPORT": {
+      "shifts": 212.0,
+      "part_time_shifts": 90.0,
+      "paid_hours": 1388.0,
+      "part_time_hours_share": 0.2968299711815562,
+      "fte_equivalent": 34.7,
+      "requirement_hours": 1348.5,
+      "scheduled_hours": 1388.0,
+      "over_hours": 39.5,
+      "under_hours": 0.0,
+      "coverage_pct": 1.0,
+      "efficiency_pct": 0.9715417867435159,
+      "intervals_under": 0.0,
+      "mip_gap": 0.027383133418598844,
+      "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
+    },
+    "SALES": {
+      "shifts": 310.0,
+      "part_time_shifts": 139.0,
+      "paid_hours": 1952.0,
+      "part_time_hours_share": 0.29918032786885246,
+      "fte_equivalent": 48.8,
+      "requirement_hours": 1939.0,
+      "scheduled_hours": 1952.0,
+      "over_hours": 13.0,
+      "under_hours": 0.0,
+      "coverage_pct": 1.0,
+      "efficiency_pct": 0.9933401639344263,
+      "intervals_under": 0.0,
+      "mip_gap": 0.0005112422079566557,
+      "status": "Optimization terminated successfully. (HiGHS Status 7: Optimal)"
+    }
+  },
+  "roster_stats": {
+    "AR_BILLING": {
+      "agents": 101.0,
+      "paid_hours": 4040.0,
+      "weekend_off_share": 0.2079207920792079,
+      "distinct_start_times": 34.0,
+      "mip_gap": 0.019513988616180963,
+      "requirement_hours": 3646.0,
+      "scheduled_hours": 4040.0,
+      "over_hours": 394.5,
+      "under_hours": 0.5,
+      "coverage_pct": 0.9998628634119583,
+      "efficiency_pct": 0.9023514851485148,
+      "intervals_under": 1.0,
+      "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
+    },
+    "AR_TECH": {
+      "agents": 126.0,
+      "paid_hours": 5040.0,
+      "weekend_off_share": 0.1984126984126984,
+      "distinct_start_times": 34.0,
+      "mip_gap": 0.013514937750308147,
+      "requirement_hours": 4708.0,
+      "scheduled_hours": 5040.0,
+      "over_hours": 332.5,
+      "under_hours": 0.5,
+      "coverage_pct": 0.9998937977909941,
+      "efficiency_pct": 0.9340277777777778,
+      "intervals_under": 1.0,
+      "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
+    },
+    "EN_SUPPORT": {
+      "agents": 36.0,
+      "paid_hours": 1440.0,
+      "weekend_off_share": 0.16666666666666666,
+      "distinct_start_times": 26.0,
+      "mip_gap": 0.046574145910074354,
+      "requirement_hours": 1348.5,
+      "scheduled_hours": 1440.0,
+      "over_hours": 98.5,
+      "under_hours": 7.0,
+      "coverage_pct": 0.9948090470893586,
+      "efficiency_pct": 0.9315972222222222,
+      "intervals_under": 14.0,
+      "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
+    },
+    "SALES": {
+      "agents": 59.0,
+      "paid_hours": 2360.0,
+      "weekend_off_share": 0.288135593220339,
+      "distinct_start_times": 11.0,
+      "mip_gap": 0.0,
+      "requirement_hours": 1939.0,
+      "scheduled_hours": 2360.0,
+      "over_hours": 461.0,
+      "under_hours": 40.0,
+      "coverage_pct": 0.9793708096957194,
+      "efficiency_pct": 0.8046610169491526,
+      "intervals_under": 32.0,
+      "status": "Optimization terminated successfully. (HiGHS Status 7: Optimal)"
+    }
+  },
+  "cross_skill": {
+    "pair": [
+      "AR_BILLING",
+      "AR_TECH"
+    ],
+    "day": "2026-10-04",
+    "summary": [
+      {
+        "flex_share": 0.0,
+        "agent_hours": 1326.0,
+        "saving": 0.0,
+        "fte_saved": 0.0
+      },
+      {
+        "flex_share": 0.1,
+        "agent_hours": 1296.0,
+        "saving": 0.022624434389140302,
+        "fte_saved": 5.25
+      },
+      {
+        "flex_share": 0.2,
+        "agent_hours": 1286.0,
+        "saving": 0.0301659125188537,
+        "fte_saved": 7.0
+      },
+      {
+        "flex_share": 0.3,
+        "agent_hours": 1277.0,
+        "saving": 0.036953242835595757,
+        "fte_saved": 8.575
+      },
+      {
+        "flex_share": 0.5,
+        "agent_hours": 1276.0,
+        "saving": 0.037707390648567096,
+        "fte_saved": 8.75
+      },
+      {
+        "flex_share": 1.0,
+        "agent_hours": 1282.0,
+        "saving": 0.03318250377073906,
+        "fte_saved": 7.7
+      }
+    ]
+  },
   "rta": {
     "date": "2026-09-22",
     "queue": "AR_TECH",
     "schedule_stats": {
       "shifts": 654.0,
+      "part_time_shifts": 0.0,
       "paid_hours": 5232.0,
+      "part_time_hours_share": 0.0,
       "fte_equivalent": 130.8,
       "requirement_hours": 5050.0,
       "scheduled_hours": 5232.0,

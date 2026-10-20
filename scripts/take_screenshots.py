@@ -22,8 +22,10 @@ PAGES = {
     "overview": "Overview",
     "forecast": "Forecast",
     "staffing": "Staffing",
+    "multi_skill": "Multi_Skill",
     "capacity_plan": "Capacity_Plan",
     "schedule": "Schedule",
+    "roster": "Roster",
     "rta_desk": "Real_Time_RTA_Desk",
 }
 OUT = Path(__file__).resolve().parents[1] / "docs" / "screenshots"

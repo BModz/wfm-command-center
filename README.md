@@ -1,6 +1,6 @@
 # WFM Command Center: NileConnect
 
-A complete workforce management system for **NileConnect**, a fictional Cairo telecom contact centre: demand forecasting, Erlang C / Erlang A staffing, 26-week capacity and hiring plan, MILP shift scheduling and a real-time analyst (RTA) desk, delivered as a six-page Streamlit app.
+A complete workforce management system for **NileConnect**, a fictional Cairo telecom contact centre: demand forecasting, Erlang C / Erlang A staffing, a cross-skilling simulation, 26-week capacity and hiring plan, MILP shift scheduling with part-time shifts, weekly rostering and a real-time analyst (RTA) desk, delivered as an eight-page Streamlit app.
 
 **[Open the live demo](https://wfm-command-center-k7x5ugtdxsjssrxzgs27vt.streamlit.app/)** (Streamlit Community Cloud). The Real-Time page replays an outage day; drag the clock to 14:30 to see the incident detected.
 
@@ -36,17 +36,18 @@ The service goal is **80% of calls answered within 20 seconds** with occupancy c
 The project follows the planning cycle a WFM team runs, from long range to intraday:
 
 ```
-Simulated history ──> Forecast ──> Staffing ──> Capacity plan ──> Schedule ──> Real-time desk
- (2 years, 30-min)    (3 models,   (Erlang C    (shrinkage,      (MILP,        (reforecast,
-                       backtests)   and A)       attrition,       HiGHS)        alerts, actions,
-                                                 hiring)                        adherence)
+Simulated history ──> Forecast ──> Staffing ──> Capacity plan ──> Schedule ──> Roster ──> Real-time desk
+ (2 years, 30-min)    (3 models,   (Erlang C/A,  (shrinkage,      (MILP,       (tours:    (reforecast,
+                       backtests)   cross-skill   attrition,       part-time    5 days,    alerts, actions,
+                                    simulation)   hiring)          option)      2 off)     adherence)
 ```
 
 1. **Forecast.** Daily volume per queue from three models: seasonal naive, Holt-Winters, and one global LightGBM model on calendar features with a detrended target. Outage days are cleaned before training. The daily forecast is spread to 30-minute intervals using day-type profiles (Sunday-Thursday / Friday / Saturday × normal / Ramadan), with the Ramadan profile learned from the previous Ramadan. AHT is forecast per interval.
-2. **Staffing.** Vectorised Erlang C converts each interval's calls and AHT into agents for 80/20. Erlang A (with caller patience) is computed alongside to show how much Erlang C overstaffs.
+2. **Staffing.** Vectorised Erlang C converts each interval's calls and AHT into agents for 80/20. Erlang A (with caller patience) is computed alongside to show how much Erlang C overstaffs. A discrete-event simulation of the two Arabic queues tests how many agents cross-skilling would save, something no Erlang formula can answer.
 3. **Capacity.** Interval agent-hours, compounded shrinkage and 40 contracted hours give weekly FTE. Supply is projected with attrition, training (0% productive) and nesting (60%), and new-hire classes are recommended.
-4. **Schedule.** A mixed-integer programme (scipy `milp` / HiGHS) chooses shift starts and break positions for a cyclic Sunday-Saturday week, with breaks placed to respect the 5-hour rule.
-5. **Real time.** A replay of a real day on AR_TECH with an afternoon outage. It uses the forecast made the evening before, the optimised schedule and 129 simulated agents with late logins, extended breaks, aux and no-shows. The desk reforecasts the rest of the day, raises alerts and recommends actions with numbers and times.
+4. **Schedule.** A mixed-integer programme (scipy `milp` / HiGHS) chooses shift starts and break positions for a cyclic Sunday-Saturday week, with breaks placed to respect the 5-hour rule. Optionally it mixes in 4- and 5-hour part-time shifts, capped at 30% of paid hours.
+5. **Roster.** A second MILP (tour scheduling) gives every agent a legal weekly pattern: the same start time on 5 days and 2 consecutive rest days. It produces a named roster, team by team.
+6. **Real time.** A replay of a real day on AR_TECH with an afternoon outage. It uses the forecast made the evening before, the optimised schedule and 129 simulated agents with late logins, extended breaks, aux and no-shows. The desk reforecasts the rest of the day, raises alerts and recommends actions with numbers and times.
 
 ## Results
 
@@ -69,22 +70,35 @@ Each model was trained only on data up to the day before the window. Accuracy is
 - **Textbook check:** 100 calls in 30 minutes at 180s AHT is 10 Erlangs. Erlang C says 13 agents give 79.6% (just short) and **14 agents give 88.8%** at 7.8s ASA and 71% occupancy. With 180s average patience, Erlang A needs **12 agents**.
 - Across the first forecast week, **Erlang C asks for 495 more agent-hours than Erlang A (+4.8%).** The gap is +3% on the large Arabic queues and +9% on EN_SUPPORT and SALES: small queues and impatient callers are where ignoring abandonment costs the most.
 
+### Cross-skilling AR_BILLING and AR_TECH (simulation)
+
+A discrete-event simulation reproduces Erlang A to within about 1 point of service level when nobody is cross-skilled. Simulating a full Sunday with both queues held at 80/20:
+
+| Share of agents cross-skilled | 0% | 10% | 20% | **30%** | 50% | 100% |
+|---|---|---|---|---|---|---|
+| Agent-hours saved | – | 2.3% | 3.0% | **3.7%** | 3.8% | 3.3% |
+
+- **Cross-skilling 30% of agents captures 98% of the best saving,** about 8.6 FTE a week.
+- **Training everyone is worse than training 30%,** because cross-skilled agents handle technical calls about 5% slower. Large queues are already efficient on their own, so the gain is modest.
+
 ### Capacity plan (October 2026 to March 2027)
 
 - **Requirement:** an average of **372 FTE**, peaking at **408 FTE** in the first week of Ramadan 2027 (28 February). Default shrinkage is **20.3% compounded** (22.1% if simply added).
 - **Recommended hiring: 104 hires in 10 classes across the four teams.** For example, AR_TECH needs classes of 21, 17 and 6 starting 1 November, 13 December and 3 January to be proficient before the Ramadan peak, when it needs 172 FTE.
 - **Hires are planned against a 5-week rolling median of the requirement,** so one-off billing-cycle and campaign weeks are covered with overtime instead of permanent headcount that would sit idle afterwards.
 
-### Schedule (week of 4 October 2026)
+### Schedule and roster (week of 4 October 2026)
 
-| Queue | Shifts | FTE equivalent | Coverage | Efficiency |
-|---|---|---|---|---|
-| AR_BILLING | 468 | 93.6 | 100.0% | 97.4% |
-| AR_TECH | 608 | 121.6 | 100.0% | 96.8% |
-| EN_SUPPORT | 173 | 34.6 | 100.0% | 97.4% |
-| SALES | 289 | 57.8 | 98.9% | 83.0% |
+| Queue | FTE, full-time shifts | Efficiency | FTE, with part-time | Efficiency | Rostered agents |
+|---|---|---|---|---|---|
+| AR_BILLING | 93.6 | 97.4% | 92.5 | 98.6% | 101 |
+| AR_TECH | 121.6 | 96.8% | 119.0 | 98.9% | 126 |
+| EN_SUPPORT | 34.6 | 97.4% | 34.7 | 97.2% | 36 |
+| SALES | 57.8 | 83.0% | **48.8** | **99.3%** | 59 |
 
-The 24/7 queues are scheduled at about 97% efficiency, each within 2.5% of HiGHS's proven optimum. SALES is open only 14 hours a day, so fixed 9-hour shifts cannot follow its two peaks. **Adding 4-6 hour part-time shifts is the obvious next lever** for that queue.
+- **The 24/7 queues are scheduled at about 97% efficiency with full-time shifts alone,** each within 2.5% of HiGHS's proven optimum.
+- **SALES is open only 14 hours a day with two peaks,** so 9-hour shifts cannot follow it. **Adding 4- and 5-hour part-time shifts cuts SALES by 9 FTE (-16%) and lifts its efficiency from 83% to 99%.** On the 24/7 queues, part-time gains are within the solver gap.
+- **Legal weekly rosters cost 2-8% more heads than free shift scheduling.** Every agent works 5 days at the same start time with 2 consecutive rest days, and that stability has a price. Rest days avoid Sunday, the busiest day, and 40-50% of agents get Friday off.
 
 ### Real-time desk: the 22 September 2026 outage
 
@@ -104,7 +118,9 @@ Projected service level for the next 4 hours goes from **54% with no action to 9
 - **Erlang C is a safe but expensive default.** About 5% of agent-hours across the centre, and 9% on small queues, is the price of ignoring abandonment.
 - **Shrinkage and occupancy are different levers.** Shrinkage (20%) decides how many people you pay; occupancy (capped at 88%) decides how hard the people on the phones work.
 - **Hire for the baseline, flex for the spikes.** Smoothing the hiring signal avoids hiring 25 sales agents for one campaign week.
-- **Schedule shape matters as much as headcount.** On the same requirement, 24/7 queues reach 97% efficiency while the 14-hour SALES queue reaches 83%.
+- **Schedule shape matters as much as headcount.** On the same requirement, 24/7 queues reach 97% efficiency while the 14-hour SALES queue reaches 83%. The fix is a shift menu (part-time shifts), not more people.
+- **Partial cross-skilling is the sweet spot.** About 30% of agents with both skills gets almost all of the pooling benefit, without the training cost and AHT penalty of cross-skilling everyone.
+- **Budget for the roster, not the schedule.** Turning shift counts into legal weekly patterns adds a few percent of heads; capacity plans that skip this step come up short.
 
 ## WFM concepts demonstrated
 
@@ -116,7 +132,9 @@ Projected service level for the next 4 hours goes from **54% with no action to 9
 - Top-down interval forecasting with day-type profiles; AHT forecasting
 - Shrinkage: planned vs unplanned, in-day vs out-of-day, compounded vs additive
 - FTE requirement, attrition, training and nesting curves, recruitment lead time, hiring classes
-- Shift scheduling as an integer programme: break placement, cyclic weeks, coverage, over/under, efficiency
+- Multi-skill routing and pooling: dedicated vs cross-skilled agents, discrete-event simulation, cross-skill AHT penalty
+- Shift scheduling as an integer programme: break placement, cyclic weeks, part-time shift mix, coverage, over/under, efficiency
+- Rostering (tour scheduling): rest-day patterns, fixed start times, weekend preferences, cost of rostering rules
 - Intraday management: reforecasting, incident detection, IVR deflection and callback, cancelling offline activities, break moves, overtime, VTO
 - Adherence vs conformance, exception tracking (late login, extended break, unscheduled aux, no-show)
 - Egyptian labour law as planning constraints
@@ -128,8 +146,10 @@ Projected service level for the next 4 hours goes from **54% with no action to 9
 | **Overview** | Last 4 weeks of SL, ASA, abandon rate, occupancy and volume; two-year weekly trends; interval × weekday heatmap; Ramadan vs normal intraday profile |
 | **Forecast** | Model comparison table, backtest charts (daily and interval), Ramadan backtest, 26-week outlook |
 | **Staffing** | Interactive Erlang C / A calculator, interval requirement curve, Erlang C vs A comparison |
+| **Multi-Skill** | Agent-hours saved by cross-skilled share, agents through the day, interactive one-interval simulator |
 | **Capacity Plan** | Editable shrinkage, supply assumptions, required vs available FTE, recommended hiring plan |
-| **Schedule** | Optimised weekly shifts, coverage and over/under charts, shift-start heatmap, live single-day re-optimisation |
+| **Schedule** | Optimised weekly shifts with or without part-time, coverage and over/under charts, shift-start heatmap, live single-day re-optimisation |
+| **Roster** | Named weekly roster (5 days on, 2 consecutive off), rest-day spread, labour-rule checks, coverage |
 | **Real-Time (RTA Desk)** | Time slider, live KPI tiles, alerts, recommended actions with projected impact, agent adherence table |
 
 | Overview | Forecast |
@@ -137,8 +157,10 @@ Projected service level for the next 4 hours goes from **54% with no action to 9
 | ![Overview](docs/screenshots/overview.png) | ![Forecast](docs/screenshots/forecast.png) |
 | **Staffing** | **Capacity Plan** |
 | ![Staffing](docs/screenshots/staffing.png) | ![Capacity plan](docs/screenshots/capacity_plan.png) |
-| **Schedule** | **Home** |
-| ![Schedule](docs/screenshots/schedule.png) | ![Home](docs/screenshots/home.png) |
+| **Multi-Skill** | **Schedule** |
+| ![Multi-skill](docs/screenshots/multi_skill.png) | ![Schedule](docs/screenshots/schedule.png) |
+| **Roster** | **Home** |
+| ![Roster](docs/screenshots/roster.png) | ![Home](docs/screenshots/home.png) |
 
 ## Data
 
@@ -168,7 +190,7 @@ pip install -r requirements.txt
 streamlit run app/Home.py                            # uses the prebuilt data in data/ (or use the live demo above)
 ```
 
-To rebuild everything from scratch (simulation, backtests, forecast, schedules, RTA day; about 1 minute):
+To rebuild everything from scratch (simulation, backtests, forecast, schedules, rosters, cross-skilling simulation, RTA day; about 4-5 minutes, mostly the time-limited MILPs):
 
 ```bash
 python scripts/build_data.py
@@ -178,7 +200,7 @@ Tests and screenshots:
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                                    # 46 tests
+pytest                                    # 52 tests
 streamlit run app/Home.py &               # then, in another shell:
 python scripts/take_screenshots.py        # needs `playwright install chromium`, or set CHROMIUM_PATH
 ```
@@ -192,9 +214,10 @@ src/wfm/
   labour.py          labour-law planning constraints
   simulate.py        synthetic history generator
   erlang.py          Erlang B/C/A, vectorised
+  multiskill.py      cross-skilling discrete-event simulation
   forecast.py        outage cleaning, 3 models, interval forecast, backtests
   capacity.py        shrinkage, FTE, attrition, hiring recommender
-  scheduling.py      shift MILP (HiGHS)
+  scheduling.py      shift MILP with part-time option, roster (tour) MILP (HiGHS)
   realtime.py        RTA replay, reforecast, alerts, actions, adherence
 scripts/             build_data.py, take_screenshots.py
 app/                 Streamlit app (Home.py + pages/)

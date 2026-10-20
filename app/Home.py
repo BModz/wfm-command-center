@@ -23,8 +23,8 @@ st.markdown(
 st.write("")
 st.markdown(
     "An end-to-end workforce management system covering the full planning cycle: **forecast** demand, convert it "
-    "into **staffing** with Erlang C and Erlang A, plan **capacity** and hiring six months out, build an optimised "
-    "**schedule**, then manage the day in **real time** as an RTA."
+    "into **staffing** with Erlang C and Erlang A, test **cross-skilling** by simulation, plan **capacity** and hiring "
+    "six months out, build an optimised **schedule** and weekly **roster**, then manage the day in **real time** as an RTA."
 )
 
 
@@ -66,8 +66,10 @@ st.markdown(
 | **Overview** | How has the centre performed, and what do demand patterns look like? | Service level, ASA, abandon rate, occupancy, intraday and weekly seasonality |
 | **Forecast** | How many calls will arrive, and how accurate are we? | Seasonal naive vs Holt-Winters vs LightGBM, WAPE and bias, outage cleaning, Ramadan profiles |
 | **Staffing** | How many agents do we need each interval? | Erlang C, Erlang A, traffic intensity, occupancy cap, overstaffing from ignoring abandons |
+| **Multi-Skill** | How much does cross-skilling the Arabic queues save? | Pooling, skill-based routing, discrete-event simulation, cross-skill AHT penalty |
 | **Capacity Plan** | How many people do we need to hire, and when? | Shrinkage (planned vs unplanned), FTE requirement, attrition, training and nesting curves |
-| **Schedule** | Which shifts cover the requirement at the lowest cost? | Shift-scheduling MILP, break placement, coverage, over/under, schedule efficiency |
+| **Schedule** | Which shifts cover the requirement at the lowest cost? | Shift-scheduling MILP, break placement, part-time shifts, coverage, over/under, schedule efficiency |
+| **Roster** | Who works when, legally, every day of the week? | Tour scheduling, rest-day patterns, fixed start times, cost of rostering rules |
 | **Real-Time (RTA Desk)** | What is happening right now, and what should we do? | Intraday reforecast, alerts, adherence vs conformance, IVR deflection, VTO and overtime |
 """
 )

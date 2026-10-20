@@ -169,26 +169,58 @@ Compounded: total = 1 - Π(1 - s_i) = 20.3%, against an additive 22.1%. **In-day
 **Programme:**
 
 ```
-minimise   Σ_k (1 + ε·breakoffset_k)·x_k + p · Σ_t u_t
-s.t.       Σ_k a_tk·x_k + u_t ≥ r_t        for all intervals t
+minimise   Σ_k (h_k / 8 + ε·breakoffset_k)·x_k + p · Σ_t u_t
+s.t.       Σ_k a_tk·x_k + u_t ≥ r_t                      for all intervals t
+           Σ_{k part-time} h_k·x_k ≤ 0.30 · Σ_k h_k·x_k     (only when part-time is enabled)
            x_k ∈ Z≥0,  u_t ≥ 0
 ```
+
+- h_k is the paid hours of pattern k, so the cost is measured in full-time-shift equivalents.
 
 - r_t = ceil(Erlang C agents / (1 - in-day shrinkage)).
 - a_tk = 1 if pattern k is on the phones (not on break) in interval t.
 - p = 0.3: one uncovered agent-interval costs 0.3 shifts, so a shift is added only if it removes at least 4 short agent-intervals.
 - The tiny tie-break term ε removes symmetric optima and speeds up branch and bound.
-- Solved with scipy's `milp` (HiGHS) using a 1% relative gap and a 30-second limit; the achieved gap is reported.
+- Solved with scipy's `milp` (HiGHS) using a 1% relative gap and a 20-30 second limit; the achieved gap is reported. Because solves stop at a time limit, results can differ slightly between machines.
+
+**Part-time option:**
+- Shifts of 4 or 5 paid hours with no break: neither exceeds the 5-hour continuous-work limit, so no break is required.
+- Part-time hours are capped at 30% of paid hours (a site-policy assumption).
+- Part-time gains are reported against the full-time-only schedule on the same requirement.
 
 **Outputs:**
 - coverage % = Σ min(cov, r) / Σ r
 - efficiency = Σ min(cov, r) / Σ cov
 - over/under by interval
-- FTE equivalent = shifts / 5
+- FTE equivalent = paid hours / 40
 
 The contract (5 × 8h = 40h, 2 rest days) is checked against the legal 48-hour week and 24-hour weekly rest.
 
-## 7. Real time (`realtime.py`)
+**Roster (tour scheduling).** The shift MILP chooses each day's shifts independently, which no real agent can work. The roster MILP instead uses one variable per tour:
+
+- A tour is a days-off pair (7 consecutive pairs, Sunday-Monday to Saturday-Sunday), a start time (48 options) and a break offset (5 options): 1,680 integer variables.
+- An agent on a tour works the same 9-hour shift on the 5 other days, so there are 15 hours of rest between shifts and at least 48 hours of weekly rest.
+- The objective is minimum agents, with the under-coverage penalty divided by 5 (one tour = 5 shifts) and a tiny bonus for Friday-Saturday off, the Egyptian weekend, to break ties.
+- Each tour is expanded into named agents in teams of 14, with each day's shift or OFF.
+- The gap between rostered agents and the shift schedule's FTE equivalent is the cost of the rostering rules.
+
+## 7. Cross-skilling simulation (`multiskill.py`)
+
+Erlang formulas describe one skill group. For two queues where some agents hold both skills there is no closed form, so the module runs a discrete-event simulation:
+
+- **Calls:** Poisson arrivals per queue at the interval's forecast rate, exponential handle times and exponential patience (the same assumptions as Erlang A).
+- **Agents:** dedicated billing agents, dedicated tech agents and cross-skilled agents. Cross-skilled agents take 5% longer on tech calls (their secondary skill).
+- **Routing:** an arriving call goes to an idle agent of its own skill first, then to an idle cross-skilled agent, otherwise it queues. A dedicated agent who becomes free takes the head of their own queue; a free cross-skilled agent takes whichever queue's head call has waited longest. Callers whose patience runs out abandon.
+- **Measurement:** each scenario simulates 8-12 hours of stationary traffic after a 30-minute warm-up. Service level = answered within 20s / offered.
+- **Common random numbers:** the same call stream is reused for every staffing level, so comparisons between levels are not driven by noise.
+
+**Search:** for each cross-skilled share f, the smallest team meeting 80/20 on both queues is found by increasing the total from just below the fully pooled Erlang C estimate. round(f × total) agents are cross-skilled and the rest are split between the queues in proportion to workload. With f = 0, each queue is searched on its own.
+
+**Validation:** with no cross-skilled agents and 200-300 simulated hours, the simulation matches the Erlang A formula to within about 1 point of service level and abandon rate (covered by a test).
+
+**Day view:** every hour of the first forecast Sunday is simulated for shares of 0, 10, 20, 30, 50 and 100%. Agent-hours are summed and compared with dedicated teams. Results move by about one agent between runs.
+
+## 8. Real time (`realtime.py`)
 
 **Replay setup:** AR_TECH on Tuesday 22 September 2026.
 - **Schedule:** optimised on a forecast made 15 days before the week, the usual publication lead.
@@ -234,7 +266,7 @@ Staffed agents per interval = mean on-phone count across its six slots. Realised
 
 The projected SL before and after the actions is computed with Erlang A.
 
-## 8. Labour-law assumptions (`labour.py`)
+## 9. Labour-law assumptions (`labour.py`)
 
 These are from public summaries of Egypt's Labour Law No. 14 of 2025 (in force from September 2025). Secondary sources disagree on some figures and the executive regulations were still being finalised, so these are planning assumptions, not legal advice.
 
@@ -244,11 +276,11 @@ These are from public summaries of Egypt's Labour Law No. 14 of 2025 (in force f
 - **Overtime:** at most 2 hours a day, paid at +35% by day and +70% at night.
 - **Annual leave:** 21 days.
 
-## 9. Limitations
+## 10. Limitations
 
 - **The data is synthetic.** Absolute accuracy figures show the method, not what any real centre would achieve. Real data has messier drivers: marketing, IT releases, weather.
 - **Ramadan, Eid and other lunar-calendar dates are approximate.**
 - **Erlang models assume Poisson arrivals and steady state within each interval.** Erlang A also assumes exponential patience.
-- **Each queue is planned as a separate skill group.** Multi-skill routing and cross-skilled agents are out of scope.
-- **The scheduler produces shift counts, not named rosters.** Assigning days off over a multi-week rotation is a separate step.
+- **Cross-skilling is simulated for one queue pair and one representative day.** The capacity plan and schedules still treat each queue as its own skill group.
+- **Rosters cover one week with a fixed start time per agent.** Multi-week rotations, agent preferences and skills per agent are not modelled.
 - **IVR deflection rates and agent-behaviour probabilities are assumptions,** chosen to sit inside typical industry ranges.
