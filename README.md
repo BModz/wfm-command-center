@@ -2,6 +2,8 @@
 
 A complete workforce management system for **NileConnect**, a fictional Cairo telecom contact centre: demand forecasting, Erlang C / Erlang A staffing, 26-week capacity and hiring plan, MILP shift scheduling and a real-time analyst (RTA) desk, delivered as a six-page Streamlit app.
 
+**Live demo: [wfm-command-center.streamlit.app](https://wfm-command-center-k7x5ugtdxsjssrxzgs27vt.streamlit.app/)**. The Real-Time page replays an outage day; drag the clock to 14:30 to see the incident detected.
+
 > **NileConnect is fictional and all data is synthetic.** Real interval-level contact-centre data is not publicly available, so two years of 30-minute history were simulated with realistic Egyptian patterns (see [Data](#data)). Every number below comes from that simulated operation.
 
 ![RTA desk during a network outage](docs/screenshots/rta_desk.png)
@@ -163,7 +165,7 @@ cd wfm-command-center
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-streamlit run app/Home.py                            # uses the prebuilt data in data/
+streamlit run app/Home.py                            # uses the prebuilt data in data/ (or use the live demo above)
 ```
 
 To rebuild everything from scratch (simulation, backtests, forecast, schedules, RTA day; about 1 minute):
