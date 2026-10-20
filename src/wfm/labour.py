@@ -26,10 +26,8 @@ class LabourRules:
     holiday_work_multiplier: float = 2.0
     annual_leave_days: int = 21
     contract_weekly_hours: float = 40.0  # NileConnect contract: 5 x 8 paid hours
-
-    @property
-    def shift_paid_hours(self) -> float:
-        return self.max_daily_hours
+    night_start_hour: int = 22  # site policy for the night overtime premium window
+    night_end_hour: int = 6
 
     @property
     def shift_length_hours(self) -> float:

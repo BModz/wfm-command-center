@@ -186,6 +186,7 @@ def _summarise(
                 "shift_end": (origin + step * (s + rules.length_intervals)).strftime("%H:%M"),
                 "break_start": (origin + step * (s + off)).strftime("%H:%M"),
                 "start_interval": s,
+                "break_offset": off,
                 "agents": int(c),
             }
             for (s, off), c in used
