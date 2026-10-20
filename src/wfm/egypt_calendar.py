@@ -35,8 +35,6 @@ FIXED_HOLIDAYS: dict[tuple[int, int], str] = {
     (10, 6): "Armed Forces Day",
 }
 
-DAY_TYPES = ("weekday", "friday", "saturday")
-
 
 def _holiday_table(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     """List every public holiday date between start and end with its name and kind."""

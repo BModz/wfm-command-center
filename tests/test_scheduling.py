@@ -58,3 +58,13 @@ def test_soft_penalty_allows_small_gaps():
 def test_schedule_requirement_grosses_up_for_in_day_shrinkage():
     assert schedule_requirement(np.array([10, 0]), 0.1).tolist() == [12, 0]
     assert schedule_requirement(np.array([9]), 0.1).tolist() == [10]
+
+
+def test_contract_respects_egyptian_weekly_limits():
+    from wfm.labour import EGYPT_LABOUR
+
+    rules = ShiftRules()
+    assert rules.paid_hours <= EGYPT_LABOUR.max_daily_hours
+    assert rules.paid_hours * rules.shifts_per_fte <= EGYPT_LABOUR.max_weekly_hours
+    rest_days = 7 - rules.shifts_per_fte
+    assert rest_days * 24 >= EGYPT_LABOUR.min_weekly_rest_hours

@@ -600,6 +600,7 @@ def adherence_table(day: RTADay, now: int) -> pd.DataFrame:
             + np.where(day.agents["shift_start"] < day.date, " (prev day)", ""),
             "scheduled_now": [STATE_LABELS[s] for s in now_s],
             "actual_now": [STATE_LABELS[a] for a in now_a],
+            "on_shift_now": now_s != OFF,
             "out_of_adherence": out_now,
             "minutes_out_now": current * SLOT_MINUTES,
             "adherence": adherence,
@@ -608,7 +609,9 @@ def adherence_table(day: RTADay, now: int) -> pd.DataFrame:
             "exception": day.agents["exception"],
         }
     )
-    table = table[started].sort_values(["out_of_adherence", "minutes_out_now", "adherence"], ascending=[False, False, True])
+    table = table[started].sort_values(
+        ["out_of_adherence", "minutes_out_now", "on_shift_now", "adherence"], ascending=[False, False, False, True]
+    )
     return table.reset_index(drop=True)
 
 

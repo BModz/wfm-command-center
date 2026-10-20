@@ -23,7 +23,6 @@ class LabourRules:
     max_daily_overtime_hours: float = 2.0
     overtime_premium_day: float = 0.35
     overtime_premium_night: float = 0.70
-    holiday_work_multiplier: float = 2.0
     annual_leave_days: int = 21
     contract_weekly_hours: float = 40.0  # NileConnect contract: 5 x 8 paid hours
     night_start_hour: int = 22  # site policy for the night overtime premium window

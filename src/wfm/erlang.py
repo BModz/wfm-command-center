@@ -12,7 +12,7 @@ therefore tends to overstate the agents needed.
 from __future__ import annotations
 
 import numpy as np
-from scipy.special import gammaln, logsumexp
+from scipy.special import logsumexp
 from scipy.stats import poisson
 
 from wfm.config import INTERVAL_SECONDS, MAX_OCCUPANCY, SL_TARGET, SL_THRESHOLD_S
