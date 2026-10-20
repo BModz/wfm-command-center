@@ -1,0 +1,9 @@
+[project]
+name = "wfm-command-center"
+version = "1.0.0"
+description = "Workforce Management command centre for a fictional Cairo telecom contact centre (NileConnect)."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
