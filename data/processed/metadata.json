@@ -1,0 +1,90 @@
+{
+  "built_at": "2026-10-20T12:25:01",
+  "seed": 42,
+  "champion_model": "LightGBM",
+  "history": [
+    "2024-10-01",
+    "2026-09-30"
+  ],
+  "forecast": [
+    "2026-10-04",
+    "2027-04-03"
+  ],
+  "schedule_week": "2026-10-04",
+  "schedule_stats": {
+    "AR_BILLING": {
+      "shifts": 468.0,
+      "paid_hours": 3744.0,
+      "fte_equivalent": 93.6,
+      "requirement_hours": 3646.0,
+      "scheduled_hours": 3744.0,
+      "over_hours": 99.0,
+      "under_hours": 1.0,
+      "coverage_pct": 0.9997257268239166,
+      "efficiency_pct": 0.9735576923076923,
+      "intervals_under": 1.0,
+      "mip_gap": 0.0031741245621584382,
+      "status": "Optimization terminated successfully. (HiGHS Status 7: Optimal)"
+    },
+    "AR_TECH": {
+      "shifts": 608.0,
+      "paid_hours": 4864.0,
+      "fte_equivalent": 121.6,
+      "requirement_hours": 4708.0,
+      "scheduled_hours": 4864.0,
+      "over_hours": 156.0,
+      "under_hours": 0.0,
+      "coverage_pct": 1.0,
+      "efficiency_pct": 0.9679276315789473,
+      "intervals_under": 0.0,
+      "mip_gap": 0.0050919015917608714,
+      "status": "Optimization terminated successfully. (HiGHS Status 7: Optimal)"
+    },
+    "EN_SUPPORT": {
+      "shifts": 173.0,
+      "paid_hours": 1384.0,
+      "fte_equivalent": 34.6,
+      "requirement_hours": 1348.5,
+      "scheduled_hours": 1384.0,
+      "over_hours": 35.5,
+      "under_hours": 0.0,
+      "coverage_pct": 1.0,
+      "efficiency_pct": 0.974349710982659,
+      "intervals_under": 0.0,
+      "mip_gap": 0.024552641800133092,
+      "status": "Time limit reached. (HiGHS Status 13: Time limit reached)"
+    },
+    "SALES": {
+      "shifts": 289.0,
+      "paid_hours": 2312.0,
+      "fte_equivalent": 57.8,
+      "requirement_hours": 1939.0,
+      "scheduled_hours": 2312.0,
+      "over_hours": 393.5,
+      "under_hours": 20.5,
+      "coverage_pct": 0.9894275399690562,
+      "efficiency_pct": 0.8298010380622838,
+      "intervals_under": 20.0,
+      "mip_gap": 0.0,
+      "status": "Optimization terminated successfully. (HiGHS Status 7: Optimal)"
+    }
+  },
+  "rta": {
+    "date": "2026-09-22",
+    "queue": "AR_TECH",
+    "schedule_stats": {
+      "shifts": 654.0,
+      "paid_hours": 5232.0,
+      "fte_equivalent": 130.8,
+      "requirement_hours": 5050.0,
+      "scheduled_hours": 5232.0,
+      "over_hours": 182.0,
+      "under_hours": 0.0,
+      "coverage_pct": 1.0,
+      "efficiency_pct": 0.9652140672782875,
+      "intervals_under": 0.0,
+      "mip_gap": 0.0031183083879867354
+    }
+  },
+  "intervals_per_day": 48
+}

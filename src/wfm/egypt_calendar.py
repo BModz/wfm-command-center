@@ -63,6 +63,11 @@ def _holiday_table(start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
     return table[(table["date"] >= start) & (table["date"] <= end)]
 
 
+def week_start(dates: pd.Series) -> pd.Series:
+    """Sunday on or before each date: WFM weeks in Egypt run Sunday to Saturday."""
+    return dates - pd.to_timedelta((dates.dt.dayofweek + 1) % 7, unit="D")
+
+
 def build_calendar(start: str | pd.Timestamp, end: str | pd.Timestamp) -> pd.DataFrame:
     """Build a daily calendar with every feature the simulator and forecaster need.
 
@@ -84,7 +89,7 @@ def build_calendar(start: str | pd.Timestamp, end: str | pd.Timestamp) -> pd.Dat
     cal["month"] = cal["date"].dt.month
     cal["day_of_month"] = cal["date"].dt.day
     cal["day_of_year"] = cal["date"].dt.dayofyear
-    cal["week_start"] = cal["date"] - pd.to_timedelta((cal["dow"] + 1) % 7, unit="D")
+    cal["week_start"] = week_start(cal["date"])
 
     holidays = _holiday_table(start - pd.Timedelta(days=7), end + pd.Timedelta(days=7))
     cal = cal.merge(holidays, on="date", how="left")

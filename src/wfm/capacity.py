@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from wfm.config import INTERVAL_MINUTES, MAX_OCCUPANCY, SL_TARGET, SL_THRESHOLD_S
+from wfm.egypt_calendar import week_start
 from wfm.erlang import required_agents, traffic_intensity
 from wfm.labour import EGYPT_LABOUR
 
@@ -117,7 +118,7 @@ def weekly_requirement(requirement: pd.DataFrame, shrinkage: Shrinkage, weekly_h
     """
     hours = INTERVAL_MINUTES / 60
     req = requirement.assign(
-        week_start=requirement["date"] - pd.to_timedelta((requirement["date"].dt.dayofweek + 1) % 7, unit="D"),
+        week_start=week_start(requirement["date"]),
         agent_hours=requirement["required_agents"] * hours,
         workload_hours=requirement["workload_erl"] * hours,
     )
