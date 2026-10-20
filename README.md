@@ -2,7 +2,7 @@
 
 A complete workforce management system for **NileConnect**, a fictional Cairo telecom contact centre: demand forecasting, Erlang C / Erlang A staffing, 26-week capacity and hiring plan, MILP shift scheduling and a real-time analyst (RTA) desk, delivered as a six-page Streamlit app.
 
-**Live demo: [wfm-command-center.streamlit.app](https://wfm-command-center-k7x5ugtdxsjssrxzgs27vt.streamlit.app/)**. The Real-Time page replays an outage day; drag the clock to 14:30 to see the incident detected.
+**[Open the live demo](https://wfm-command-center-k7x5ugtdxsjssrxzgs27vt.streamlit.app/)** (Streamlit Community Cloud). The Real-Time page replays an outage day; drag the clock to 14:30 to see the incident detected.
 
 > **NileConnect is fictional and all data is synthetic.** Real interval-level contact-centre data is not publicly available, so two years of 30-minute history were simulated with realistic Egyptian patterns (see [Data](#data)). Every number below comes from that simulated operation.
 
